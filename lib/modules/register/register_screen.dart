@@ -16,6 +16,7 @@ class RegisterScreen extends StatelessWidget {
   var emailController = TextEditingController();
   var passwordController = TextEditingController();
   var phoneController = TextEditingController();
+  var emergencyEmailController = TextEditingController();
   var weightController = TextEditingController();
   var heightController = TextEditingController();
 
@@ -123,11 +124,30 @@ class RegisterScreen extends StatelessWidget {
                           type: TextInputType.phone,
                           validate: (value) {
                             if (value!.isEmpty) {
-                              return 'please enter your doctor phone number';
+                              return 'please enter your emergency phone number';
+                            }
+                            if (value.length != 11 ||
+                                value.substring(0, 2) != '01') {
+                              print(value.substring(0, 2) != '01');
+                              return 'enter a valid phone number';
                             }
                           },
-                          lable: 'Doctor Phone',
+                          lable: 'Emergency Number',
                           prefix: Icons.phone,
+                        ),
+                        SizedBox(
+                          height: 30.0,
+                        ),
+                        defultFormField(
+                          controller: emergencyEmailController,
+                          type: TextInputType.emailAddress,
+                          validate: (value) {
+                            if (value!.isEmpty) {
+                              return 'please enter your emergency email';
+                            }
+                          },
+                          lable: 'Emergency Email',
+                          prefix: IconBroken.Heart,
                         ),
                         SizedBox(
                           height: 30.0,
@@ -170,6 +190,8 @@ class RegisterScreen extends StatelessWidget {
                                   email: emailController.text,
                                   password: passwordController.text,
                                   phone: phoneController.text,
+                                  emergency_email:
+                                      emergencyEmailController.text,
                                   height: heightController.text,
                                   weight: weightController.text,
                                 );

@@ -1,15 +1,24 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
+
+import 'package:background_mode/background_mode.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:health/health.dart';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+
 import 'package:fristapp/layout/cubit/states.dart';
 import 'package:fristapp/model/user_model.dart';
 import 'package:fristapp/modules/health_app/home_screen.dart';
@@ -20,15 +29,13 @@ import 'package:fristapp/shared/component/constants.dart';
 import 'package:fristapp/shared/network/local/cache_helper.dart';
 import 'package:fristapp/shared/network/local/sqldb.dart';
 import 'package:fristapp/shared/styles/icon_broken.dart';
-import 'package:health/health.dart';
-import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http;
-import 'dart:math';
+import 'package:mailer/mailer.dart';
+import 'package:mailer/smtp_server/gmail.dart';
+
 import '../../model/chart_data_model.dart';
 import '../../modules/Firebase/firebase.dart';
 import '../../modules/vitals/blood_glucose/cubit/cubit.dart';
 import 'Constant/google_fit_functions.dart';
-import 'package:background_mode/background_mode.dart';
 
 class GPCubit extends Cubit<GPStates> {
   GPCubit() : super(InitialState());
@@ -82,6 +89,7 @@ class GPCubit extends Cubit<GPStates> {
     FirebaseFirestore.instance.collection('Users').doc(uId).get().then((value) {
       usermodel = UserModel.fromJson(value.data());
       doc_num = usermodel!.phone;
+      e_doc_num = usermodel!.emergency_email;
       emit(GetUserSuccessState());
     }).catchError((error) {
       print(error.toString());
@@ -101,6 +109,41 @@ class GPCubit extends Cubit<GPStates> {
       print(error.toString());
     });
   }
+
+  void UserDeletedb() async {
+    emit(UserDeletedbLoadingState());
+    SqlDb _sqlDb = SqlDb();
+
+    await _sqlDb.deleteData('''
+      DELETE FROM `stepstable` 
+''');
+    await _sqlDb.deleteData('''
+      DELETE FROM `hrtable` 
+''');
+    await _sqlDb.deleteData('''
+      DELETE FROM `Insulintable` 
+''');
+    await _sqlDb.deleteData('''
+      DELETE FROM `Carbohydratestable` 
+''');
+    await _sqlDb.deleteData('''
+      DELETE FROM `Glucosetable` 
+''');
+    await _sqlDb.deleteData('''
+      DELETE FROM `caloriestable` 
+''');
+    // await _sqlDb.mydeleteDatabase();
+
+  //   setMinMaxGlucose(
+  //       min: 0,
+  //       max: 0,
+  //       last_value: 1000,
+  //       last_date: startofTheDay,
+  //       avg: 0,
+  //       last_glucose_in: '');
+  //   print('Deleted Successfully');
+  //   emit(newUserDeletedbSuccessState());
+  // }
 
 // ******************************      Google Fit      ******************************
   HealthFactory health = HealthFactory();
@@ -463,6 +506,34 @@ class GPCubit extends Cubit<GPStates> {
   }
   // ********************************************************************
 
+// Handle Email
+  bool e_isupdated = false;
+  late String e_doc_num;
+  void e_edite_number(String e_newNum, BuildContext context) {
+    try {
+      var splitag = e_newNum.split(".");
+      if (splitag.last == 'com') {
+        e_doc_num = e_newNum;
+        e_isupdated = true;
+        showToast(
+            msg: 'Email Number Edited Successfully',
+            state: toastStates.SUCCESS);
+        Navigator.pop(context);
+        emit(HandlePhoneNumberSuccessState());
+      } else {
+        // Enter valid phone number
+        showToast(msg: 'Enter a valid number', state: toastStates.WARNING);
+
+        emit(HandlePhoneNumbererrorState());
+      }
+    } catch (error) {
+      print('error :  ${error}');
+      // Enter valid phone number
+      showToast(msg: 'Enter a valid Email', state: toastStates.WARNING);
+      emit(HandlePhoneNumbererrorState());
+    }
+  }
+
 // Handle Phone Number
   bool isupdated = false;
   late String doc_num;
@@ -640,34 +711,6 @@ class GPCubit extends Cubit<GPStates> {
       print('Error/****************************** :  ${e}');
       emit(StartSendingNotificationErrorState());
     });
-
-    // AndroidNotificationDetails(
-
-    // );
-
-    // Future.delayed(Duration(seconds: 2), () async {
-    //   AndroidNotificationDetails androidPlatformChannelSpecifics =
-    //       AndroidNotificationDetails(
-    //     '1.0',
-    //     'Hypoglycemia Tracking App',
-    //     importance: Importance.max,
-    //     priority: Priority.high,
-    //     playSound: true,
-    //     enableVibration: true,
-    //   );
-    //   var iOSPlatformChannelSpecifics = IOSNotificationDetails(
-    //     threadIdentifier: 'thread_id',
-    //   );
-    //   var platformChannelSpecifics = NotificationDetails(
-    //       android: androidPlatformChannelSpecifics,
-    //       iOS: iOSPlatformChannelSpecifics);
-    //   await FlutterLocalNotificationsPlugin().show(
-    //     5,
-    //     'Alert',
-    //     'Your Glucose level is Low',
-    //     platformChannelSpecifics,
-    //   );
-    // });
   }
 
   // ****Functions related to model cycle****
@@ -781,6 +824,7 @@ class GPCubit extends Cubit<GPStates> {
   DateTime endofTheDay =
       DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day)
           .add(Duration(hours: 23, minutes: 59));
+  String last_glucose_in_db = '';
   int min_Glucose = 1000;
   int max_Glucose = 0;
   int last_Glucose_value = 0;
@@ -798,17 +842,20 @@ class GPCubit extends Cubit<GPStates> {
     chartData = x;
   }
 
-  void setMinMaxGlucose(
-      {required int min,
-      required int max,
-      required int last_value,
-      required DateTime last_date,
-      required int avg}) {
+  void setMinMaxGlucose({
+    required int min,
+    required int max,
+    required int last_value,
+    required DateTime last_date,
+    required int avg,
+    required String last_glucose_in,
+  }) {
     min_Glucose = min;
     max_Glucose = max;
     last_Glucose_value = last_value;
     last_Glucose_date = last_date;
     avg_Glucose_value = avg;
+    last_glucose_in_db = last_glucose_in;
   }
 
   List<dynamic> getMinMaxGlucose() {
@@ -817,13 +864,19 @@ class GPCubit extends Cubit<GPStates> {
       max_Glucose,
       last_Glucose_value,
       last_Glucose_date,
-      avg_Glucose_value
+      avg_Glucose_value,
+      last_glucose_in_db,
     ];
   }
 
   Future<void> fetchtodayglucose() =>
       Future.delayed(Duration(microseconds: 100), () async {
         refreshandfetch();
+        //
+        List<Map> last_glucose_in_db_list = await _sqlDb.readData(
+            "SELECT `Glucosevalue` FROM 'Glucosetable' ORDER BY `id` DESC LIMIT 1");
+
+        //
         chartData = <ChartSampleData>[];
         new_response = [];
         for (int i = 0; i < 96; i++) {
@@ -867,6 +920,7 @@ class GPCubit extends Cubit<GPStates> {
                 DateTime.parse('${element.keys.single.toString()}');
             _sum_avg += current_value;
             _sum_avg_count += 1;
+            // final_current_value = current_value;
           }
 
           _getChartData.add(ChartSampleData(
@@ -878,11 +932,13 @@ class GPCubit extends Cubit<GPStates> {
           _avg = _sum_avg ~/ _sum_avg_count;
         }
         setMinMaxGlucose(
-            min: _min_Glucose,
-            max: _max_Glucose,
-            last_value: _last_Glucose_value,
-            last_date: _last_Glucose_date,
-            avg: _avg);
+          min: _min_Glucose,
+          max: _max_Glucose,
+          last_value: _last_Glucose_value,
+          last_date: _last_Glucose_date,
+          avg: _avg,
+          last_glucose_in: last_glucose_in_db_list[0]['Glucosevalue'],
+        );
         set_condition_color_txt();
         setChartData(_getChartData);
 
@@ -906,25 +962,90 @@ class GPCubit extends Cubit<GPStates> {
       codition_color = Color.fromARGB(255, 150, 0, 0);
       codition_txt = "Very Low";
       SendNotification2();
-      Timer(Duration(seconds: 10), () async {
+      Timer(Duration(seconds: 15), () async {
         await FlutterPhoneDirectCaller.callNumber('${doc_num}');
+        //
+        Timer(Duration(seconds: 15), () async {
+          // cubit.SendNotification2();
+          determinePosition().then((value) async {
+            print("Value: ${value}");
+            await send_location(value.latitude, value.longitude);
+          }).catchError((e) {
+            print('Error: ${e}');
+          });
+        });
+
+        //
       });
-    } else if (getMinMaxGlucose()[2] >= 54 && getMinMaxGlucose()[2] < 70) {
+    } else if (getMinMaxGlucose()[5] >= 54 && getMinMaxGlucose()[5] < 70) {
       codition_color = Color.fromARGB(255, 250, 20, 20);
       codition_txt = "Low";
       SendNotification2();
-    } else if (getMinMaxGlucose()[2] >= 70 && getMinMaxGlucose()[2] <= 180) {
+    } else if (getMinMaxGlucose()[5] >= 70 && getMinMaxGlucose()[5] <= 180) {
       codition_color = Colors.green;
       codition_txt = "Normal";
-    } else if (getMinMaxGlucose()[2] > 180 && getMinMaxGlucose()[2] <= 250) {
+    } else if (getMinMaxGlucose()[5] > 180 && getMinMaxGlucose()[5] <= 250) {
       codition_color = Color.fromARGB(255, 234, 238, 0);
       codition_txt = "High";
-    } else if (getMinMaxGlucose()[2] > 250) {
+    } else if (getMinMaxGlucose()[5] > 250) {
       codition_color = Color.fromARGB(255, 250, 206, 10);
       codition_txt = "Very High";
     } else {
       codition_color = Colors.black;
       codition_txt = 'Refresh';
     }
+  }
+
+  // GPS
+
+  Future<Position> determinePosition() async {
+    emit(StartGPSLoadingState());
+    LocationPermission permission;
+
+    permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        emit(StartGPSErrorState());
+
+        return Future.error('Location Permissions are denied');
+      }
+    }
+    emit(StartGPSSuccesstate());
+
+    return await Geolocator.getCurrentPosition();
+  }
+
+  String location_Url = 'Location Not Found';
+  Future send_location(double latitude, double longitude) async {
+    emit(StartSendLocationLoadingState());
+    location_Url =
+        'https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}';
+    final Email email = Email(
+      body:
+          '${usermodel?.name} Glucose Level now is very low and his current  location is ${location_Url}',
+      subject: 'Emergency ',
+      recipients: ['${e_doc_num}'],
+      isHTML: false,
+    );
+
+    await FlutterEmailSender.send(email).then(
+      (value) {
+        emit(StaSendLocationSuccesstate());
+
+        Timer(Duration(seconds: 3), () {
+          // cubit.SendNotification2();
+          determinePosition().then((value) {
+            print("Value: ${value}");
+            send_location(value.latitude, value.longitude);
+          }).catchError((e) {
+            print('Error: ${e}');
+          });
+        });
+      },
+    ).catchError((e) {
+      emit(StaSendLocationErrorState());
+    });
   }
 }

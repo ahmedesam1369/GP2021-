@@ -122,16 +122,16 @@ class HomeScreen extends StatelessWidget {
                                 width: 5.0,
                               ),
                               Text(
-                                'Current Glucose',
+                                'Predicted Glucose',
                                 style: TextStyle(
                                   fontSize: 18.0,
                                 ),
                               ),
                               Spacer(),
                               Text(
-                                cubit.getMinMaxGlucose()[2] == 0
+                                cubit.getMinMaxGlucose()[5] == ''
                                     ? '--'
-                                    : '${cubit.getMinMaxGlucose()[2].round()} mg/dL',
+                                    : '${double.parse(cubit.getMinMaxGlucose()[5].toString()).round()} mg/dL',
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(

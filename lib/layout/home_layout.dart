@@ -27,23 +27,6 @@ class HomeLayout extends StatelessWidget {
                     ),
               ),
             ),
-            // actions: [
-            //   IconButton(
-            //     onPressed: () {
-            //       if (usermodel != null) {
-            //         print('hello');
-            //         print(usermodel.email);
-            //         print(usermodel.name);
-            //         print(usermodel.phone);
-            //         print(usermodel.uId);
-            //         print(usermodel.cover);
-            //       }
-            //     },
-            //     icon: Icon(
-            //       IconBroken.Show,
-            //     ),
-            //   ),
-            // ],
           ),
           body: cubit.screens[cubit.currentIndex],
           bottomNavigationBar: BottomNavigationBar(

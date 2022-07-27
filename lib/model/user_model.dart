@@ -2,6 +2,7 @@ class UserModel {
   late String name;
   late String email;
   late String phone;
+  late String emergency_email;
   late String height;
   late String weight;
   late String uId;
@@ -13,6 +14,7 @@ class UserModel {
     this.name = '',
     this.email = '',
     this.phone = '',
+    this.emergency_email = '',
     this.height = '',
     this.weight = '',
     this.uId = '',
@@ -25,6 +27,7 @@ class UserModel {
     name = json!['name'];
     email = json['email'];
     phone = json['phone'];
+    emergency_email = json['emergency_email'];
     height = json['height'];
     weight = json['weight'];
     uId = json['uId'];
@@ -40,6 +43,7 @@ class UserModel {
       'name': name,
       'email': email,
       'phone': phone,
+      'emergency_email': emergency_email,
       'height': height,
       'weight': weight,
       'uId': uId,

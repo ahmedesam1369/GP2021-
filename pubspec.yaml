@@ -44,10 +44,12 @@ dependencies:
     sdk: flutter
   flutter_bloc: ^7.0.0
   flutter_blue: ^0.8.0
+  flutter_email_sender: ^5.1.0
   flutter_launcher_icons: ^0.9.3
   flutter_local_notifications: ^9.5.3+1
   flutter_phone_direct_caller: ^2.1.1
   fluttertoast: ^8.0.8
+  geolocator: ^7.0.0
   health: ^3.4.4
   image_picker: ^0.8.4+4
   intl: ^0.17.0
@@ -61,6 +63,7 @@ dependencies:
   url_launcher: ^6.1.4
   webview_flutter: ^2.3.1
   workout: any
+  # platform: ^3.1.0
 
 dev_dependencies:
   flutter_test:

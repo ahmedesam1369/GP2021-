@@ -18,6 +18,7 @@ class RegisterCubit extends Cubit<RegisterStates> {
     required String email,
     required String password,
     required String phone,
+    required String emergency_email,
     required String weight,
     required String height,
   }) {
@@ -34,6 +35,7 @@ class RegisterCubit extends Cubit<RegisterStates> {
           name: name,
           email: email,
           phone: phone,
+          emergency_email: emergency_email,
           UId: value.user!.uid,
           height: height,
           weight: weight);
@@ -48,6 +50,7 @@ class RegisterCubit extends Cubit<RegisterStates> {
     required String name,
     required String email,
     required String phone,
+    required String emergency_email,
     required String height,
     required String weight,
     required String UId,
@@ -56,6 +59,8 @@ class RegisterCubit extends Cubit<RegisterStates> {
       email: email,
       name: name,
       phone: phone,
+      emergency_email: emergency_email,
+
       uId: UId,
       height: height,
       weight: weight,

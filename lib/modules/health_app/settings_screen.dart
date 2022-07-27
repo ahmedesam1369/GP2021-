@@ -23,6 +23,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 class Settingsscreen extends StatelessWidget {
   late final AudioCache _audioCache;
   TextEditingController newDocNum = TextEditingController();
+  TextEditingController e_newDocNum = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<GPCubit, GPStates>(
@@ -71,22 +73,6 @@ class Settingsscreen extends StatelessWidget {
                           ),
                           alignment: AlignmentDirectional.topCenter,
                         ),
-                        // Align(
-                        //   child: CircleAvatar(
-                        //     radius: 55.0,
-                        //     foregroundColor: Colors.white,
-                        //     backgroundColor: Colors.white,
-                        //     child: CircleAvatar(
-                        //       radius: 60.0,
-                        //       backgroundImage: NetworkImage(
-                        //         usermodel.image != null
-                        //             ? '${usermodel.image}'
-                        //             : 'https://firebasestorage.googleapis.com/v0/b/first-ptoject-c0cec.appspot.com/o/default%2Fpharmacist.png?alt=media&token=597ebcef-6b26-46f4-b579-672805412efb',
-                        //       ),
-                        //     ),
-                        //   ),
-                        //   alignment: AlignmentDirectional.bottomStart,
-                        // ),
                       ],
                     ),
                   ),
@@ -169,7 +155,6 @@ class Settingsscreen extends StatelessWidget {
                       ),
                     ]),
                   ),
-
                   SizedBox(
                     height: 10.0,
                   ),
@@ -269,13 +254,13 @@ class Settingsscreen extends StatelessWidget {
                                       showDialog(
                                           context: context,
                                           builder: (context) => AlertDialog(
-                                                title: Text('Doctor Number'),
+                                                title: Text('Emergency Number'),
                                                 content: TextField(
                                                   autofocus: true,
                                                   controller: newDocNum,
                                                   decoration: InputDecoration(
                                                       hintText:
-                                                          'Number of the attending physician'),
+                                                          'Number of the Emergency'),
                                                 ),
                                                 actions: [
                                                   TextButton(
@@ -324,6 +309,92 @@ class Settingsscreen extends StatelessWidget {
                             SizedBox(
                               height: 5.0,
                             ),
+                            //
+                            SizedBox(
+                              height: 4.0,
+                            ),
+                            Row(
+                              children: [
+                                Column(
+                                  children: [
+                                    Text(
+                                      '\t Emergency Email:',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                    Center(
+                                      child: Text(
+                                        ' ${cubit.e_doc_num}',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                IconButton(
+                                    onPressed: () {
+                                      showDialog(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                                title: Text('Emergency Email'),
+                                                content: TextField(
+                                                  autofocus: true,
+                                                  controller: e_newDocNum,
+                                                  decoration: InputDecoration(
+                                                      hintText:
+                                                          'Email of the Emergency'),
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                      child: Text('Cancel'),
+                                                      onPressed: () {
+                                                        Navigator.pop(context);
+                                                      }),
+                                                  TextButton(
+                                                      child: Text('Submit'),
+                                                      onPressed: () {
+                                                        cubit.e_edite_number(
+                                                            e_newDocNum.text,
+                                                            context);
+                                                        if (cubit.e_isupdated) {
+                                                          FirebaseFirestore
+                                                              .instance
+                                                              .collection(Users)
+                                                              .doc(
+                                                                  usermodel.uId)
+                                                              .update({
+                                                            'emergency_email':
+                                                                cubit.e_doc_num
+                                                          }).then((value) {
+                                                            cubit.e_isupdated =
+                                                                false;
+                                                            print(
+                                                                'Email Updated');
+                                                          });
+                                                        }
+                                                      }),
+                                                ],
+                                              ));
+                                      // _audioCache.play('my_audio.mp3');
+                                    },
+                                    icon: Row(
+                                      children: [
+                                        Icon(
+                                          IconBroken.Edit,
+                                          color: Colors.blue,
+                                          size: 30.0,
+                                        ),
+                                      ],
+                                    )),
+                              ],
+                            ),
+                            SizedBox(
+                              height: 5.0,
+                            ),
+
+                            //
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.end,
@@ -372,36 +443,9 @@ class Settingsscreen extends StatelessWidget {
                           ]),
                     ]),
                   ),
-
                   SizedBox(
                     height: 10.0,
                   ),
-
-                  // Dark Mode
-                  // Container(
-                  //   height: 20.0,
-                  //   child: Row(
-                  //     children: [
-                  //       Expanded(
-                  //         child: Text(
-                  //           'Dark Mode',
-                  //           style:
-                  //               Theme.of(context).textTheme.bodyText1!.copyWith(
-                  //                     fontSize: 18.0,
-                  //                     fontWeight: FontWeight.normal,
-                  //                   ),
-                  //         ),
-                  //       ),
-                  //       Switch(
-                  //         value: GPCubit.get(context).IsDark,
-                  //         onChanged: (value) {
-                  //           GPCubit.get(context).ChangeAppMode();
-                  //         },
-                  //       ),
-                  //     ],
-                  //   ),
-                  // ),
-
                   Row(
                     children: [
                       Expanded(
@@ -508,14 +552,30 @@ class Settingsscreen extends StatelessWidget {
                   ),
                   RaisedButton(
                     onPressed: () async {
-                      // / initial notifications
-                      // cubit.InitialiseNotification();
+                      cubit.UserDeletedb();
+                      // print(cubit.getMinMaxGlucose()[0]);
+                      //     // / initial notifications
+                      //     // cubit.InitialiseNotification();
 
-                      Timer(Duration(seconds: 3), () {
-                        cubit.SendNotification2();
-                      });
+                      //     Timer(Duration(seconds: 10), () {
+                      //       //
+                      //       const oneSec = Duration(seconds: 15);
+                      //       Timer timer = Timer.periodic(oneSec, (Timer t) async {
+                      //         // cubit.SendNotification2();
+                      //         FlutterPhoneDirectCaller.callNumber(
+                      //             '${cubit.doc_num}');
+                      //         cubit.determinePosition().then((value) {
+                      //           print("Value: ${value}");
+                      //           // cubit.send_location(value.latitude, value.longitude);
+                      //         }).catchError((e) {
+                      //           print('Error: ${e}');
+                      //         });
+                      //       });
+
+                      //       //
+                      //     });
                     },
-                    child: Text('Send Notification'),
+                    child: Text('Delete Local Data'),
                   ),
                 ],
               ),
